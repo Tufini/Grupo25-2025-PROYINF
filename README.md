@@ -1,4 +1,4 @@
-# GrupoXX-2025-PROYINF 
+# Grupo25-2025-PROYINF 
 * Integrante 1: Maximiliano Méndez - 202273630-5
 * Integrante 2: Miguel Boutaud - 202373620-1
  * Integrante 3: Pascual Oteiza - 202230554-1
