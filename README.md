@@ -5,4 +5,4 @@
 # Video del cliente
 El video presentación del proyecto se puede ver por este [enlace](https://aula.usm.cl/mod/resource/view.php?id=6926137)
 # Wiki
-Puede acceder a la Wiki mediante el siguiente enlace [enlace](https://github.com/Tufini/Grupo25-2025-PROYINF/wiki)
+Puede acceder a la Wiki mediante el siguiente [enlace](https://github.com/Tufini/Grupo25-2025-PROYINF/wiki)
