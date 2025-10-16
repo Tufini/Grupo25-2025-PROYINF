@@ -1,35 +1,64 @@
-const express = require('express');
-const pool = require('./db'); // Importar la conexión
+import express from "express";
 const app = express();
-const port = 3000;
 
-// Ruta de prueba que guarda un mensaje en la base de datos
-app.get('/save', async (req, res) => {
-  try {
-    await pool.query('CREATE TABLE IF NOT EXISTS messages (id SERIAL PRIMARY KEY, content TEXT)');
-    await pool.query('INSERT INTO messages (content) VALUES ($1)', ['Hola desde PostgreSQL!']);
-    res.send('Mensaje guardado en la base de datos');
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error');
-  }
+app.use(express.static("public"));
+
+app.get("/", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Plataforma Préstamos de Consumo</title>
+      <link rel="stylesheet" href="/css/styles.css">
+    </head>
+    <body class="inicio">
+      <div class="inicio-container">
+        <h1>Plataforma Préstamos de Consumo</h1>
+        <a href="/simulador" class="boton-simulacion">Simulación</a>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
-// Ruta para obtener todos los mensajes
-app.get('/messages', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM messages');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error');
-  }
+app.get("/simulador", (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Simulador de Préstamos</title>
+      <link rel="stylesheet" href="/css/styles.css">
+    </head>
+    <body>
+      <div class="container">
+        <h2>Simulador de Préstamos</h2>
+        <p>Completa los datos para calcular tu préstamo.</p>
+
+        <form id="formSimulador">
+          <label for="monto">Monto del préstamo ($):</label>
+          <input type="number" id="monto" placeholder="Ej: 100000" required>
+
+          <label for="plazo">Plazo (meses):</label>
+          <input type="number" id="plazo" placeholder="Ej: 12" required>
+
+          <label for="tasa">Tasa de interés anual (%):</label>
+          <input type="number" id="tasa" placeholder="Ej: 5" required>
+
+          <button type="submit">Simular</button>
+        </form>
+
+        <div id="resultado" class="resultado"></div>
+        <a href="/" class="boton-simulacion" style="display:block;margin-top:20px;">Volver al inicio</a>
+      </div>
+
+      <script src="/js/simulador.js"></script>
+    </body>
+    </html>
+  `);
 });
 
-app.get('/', (req, res) => {
-  res.send('¡Bienvenido! Usa /save para guardar un mensaje y /messages para verlos.');
-});
-
-app.listen(port, () => {
-  console.log(`App corriendo en http://localhost:${port}`);
-});
+app.listen(3000, () => console.log("Servidor escuchando en puerto 3000"));
