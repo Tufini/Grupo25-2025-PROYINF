@@ -12,7 +12,7 @@ Este es un ejemplo de una aplicación Node.js usando Express, Docker y PostgreSQ
 ## Instalación
 
 ### 1. Clonar el repositorio
-git clone https://github.com/MatiasBV/analisis-y-diseno-de-software.git  
+git clone https://github.com/Tufini/Grupo25-2025-PROYINF/tree/main/analisis-y-diseno-de-software-main.git
 (debe tener docker-desktop abierto en todo momento)
 Ejecutar en terminal:
 
