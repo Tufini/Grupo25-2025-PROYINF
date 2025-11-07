@@ -1,16 +1,28 @@
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+
 const app = express();
 
-app.use(express.static("public"));
 
-app.get("/", (req, res) => {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
+app.use(express.json());
+
+
+app.use(express.static(path.join(__dirname, "public")));
+
+
+app.get("/", (_req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="es">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Plataforma Préstamos de Consumo</title>
+      <title>Plataforma Préstamos de Consumo - UsmBank</title>
       <link rel="stylesheet" href="/css/styles.css">
     </head>
     <body class="inicio">
@@ -23,14 +35,15 @@ app.get("/", (req, res) => {
   `);
 });
 
-app.get("/simulador", (req, res) => {
+// Ruta simulador
+app.get("/simulador", (_req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="es">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Simulador de Préstamos</title>
+      <title>Simulador de Préstamos - UsmBank</title>
       <link rel="stylesheet" href="/css/styles.css">
     </head>
     <body>
@@ -61,4 +74,8 @@ app.get("/simulador", (req, res) => {
   `);
 });
 
-app.listen(3000, () => console.log("Servidor escuchando en puerto 3000"));
+// Levantar servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
+});
