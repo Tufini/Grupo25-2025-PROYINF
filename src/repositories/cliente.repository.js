@@ -17,7 +17,7 @@ export class ClienteRepository {
                 usuario_id, rut, telefono, direccion, ingresos_mensuales, tipo
             )
             VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, usuario_id, rut, telefono, tipo, score_credito, fecha_creacion
+            RETURNING id, usuario_id, rut, telefono, tipo, score_credito, created_at
         `;
 
         const result = await query(sql, [
@@ -40,7 +40,7 @@ export class ClienteRepository {
             SELECT
                 c.id, c.usuario_id, c.rut, c.telefono, c.direccion,
                 c.ingresos_mensuales, c.score_credito, c.tipo,
-                c.fecha_creacion
+                c.created_at
             FROM clientes c
             WHERE c.id = $1
         `;
@@ -57,7 +57,7 @@ export class ClienteRepository {
             SELECT
                 c.id, c.usuario_id, c.rut, c.telefono, c.direccion,
                 c.ingresos_mensuales, c.score_credito, c.tipo,
-                c.fecha_creacion
+                c.created_at
             FROM clientes c
             WHERE c.usuario_id = $1
         `;
@@ -74,7 +74,7 @@ export class ClienteRepository {
             SELECT
                 c.id, c.usuario_id, c.rut, c.telefono, c.direccion,
                 c.ingresos_mensuales, c.score_credito, c.tipo,
-                c.fecha_creacion
+                c.created_at
             FROM clientes c
             WHERE c.rut = $1
         `;
@@ -91,7 +91,7 @@ export class ClienteRepository {
             SELECT
                 c.id, c.rut, c.telefono, c.direccion,
                 c.ingresos_mensuales, c.score_credito, c.tipo,
-                c.fecha_creacion,
+                c.created_at,
                 u.email, u.nombre, u.apellido, u.activo
             FROM clientes c
             INNER JOIN usuarios u ON c.usuario_id = u.id

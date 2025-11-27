@@ -1,9 +1,9 @@
-import React, { FormEvent, ReactNode, useMemo, useState } from "react";
+import React, { FormEvent, ReactNode, useMemo, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { PublicSimulator } from "./components/PublicSimulator.js";
-import { ConversionModal } from "./components/ConversionModal.js";
 import { useAuth } from "./store/authStore.js";
 
+// --- Types & Helpers ---
 
 type AuthMode = "login" | "signup" | "forgot-password";
 
@@ -12,36 +12,28 @@ type ToastState = {
   tone: "success" | "info" | "error";
 } | null;
 
-// Validaciones
 const validateRUT = (rut: string): boolean => {
-  // Limpiar RUT
   const cleanRUT = rut.replace(/[.-]/g, '');
   if (cleanRUT.length < 8) return false;
-
   const body = cleanRUT.slice(0, -1);
   const verifier = cleanRUT.slice(-1).toLowerCase();
-
   let sum = 0;
   let multiplier = 2;
-
   for (let i = body.length - 1; i >= 0; i--) {
     sum += parseInt(body[i]) * multiplier;
     multiplier = multiplier === 7 ? 2 : multiplier + 1;
   }
-
   const expectedVerifier = 11 - (sum % 11);
   const finalVerifier = expectedVerifier === 11 ? '0' : expectedVerifier === 10 ? 'k' : expectedVerifier.toString();
-
   return verifier === finalVerifier;
 };
 
 const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
 interface PasswordStrength {
-  score: number; // 0-4
+  score: number;
   label: string;
   color: string;
   suggestions: string[];
@@ -50,39 +42,15 @@ interface PasswordStrength {
 const calculatePasswordStrength = (password: string): PasswordStrength => {
   let score = 0;
   const suggestions: string[] = [];
-
-  // Longitud
-  if (password.length >= 8) score++;
-  else suggestions.push("Mínimo 8 caracteres");
-
+  if (password.length >= 8) score++; else suggestions.push("Mínimo 8 caracteres");
   if (password.length >= 12) score++;
-
-  // Mayúsculas
-  if (/[A-Z]/.test(password)) score++;
-  else suggestions.push("Incluye mayúsculas");
-
-  // Minúsculas
-  if (/[a-z]/.test(password)) score++;
-  else suggestions.push("Incluye minúsculas");
-
-  // Números
-  if (/[0-9]/.test(password)) score++;
-  else suggestions.push("Incluye números");
-
-  // Caracteres especiales
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
-  else suggestions.push("Incluye símbolos (!@#$...)");
-
-  // No patrones comunes
-  const commonPatterns = ['123', 'abc', 'password', 'qwerty'];
-  if (commonPatterns.some(pattern => password.toLowerCase().includes(pattern))) {
-    score = Math.max(0, score - 2);
-    suggestions.push("Evita patrones comunes");
-  }
+  if (/[A-Z]/.test(password)) score++; else suggestions.push("Incluye mayúsculas");
+  if (/[a-z]/.test(password)) score++; else suggestions.push("Incluye minúsculas");
+  if (/[0-9]/.test(password)) score++; else suggestions.push("Incluye números");
+  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++; else suggestions.push("Incluye símbolos");
 
   const maxScore = 6;
   const normalizedScore = Math.min(4, Math.floor((score / maxScore) * 5));
-
   const labels = ['Muy débil', 'Débil', 'Aceptable', 'Fuerte', 'Muy fuerte'];
   const colors = ['#ef4444', '#f59e0b', '#eab308', '#22c55e', '#10b981'];
 
@@ -94,542 +62,259 @@ const calculatePasswordStrength = (password: string): PasswordStrength => {
   };
 };
 
-const navLinks = [
-  { href: "#simulador", label: "Simulador" },
-  { href: "#acceso", label: "Acceso" },
-  { href: "#respaldo", label: "Respaldo" },
-];
+// --- UI Components ---
 
-const stats = [
-  { icon: "⚡", value: "Instantáneo", label: "Aprobación automática" },
-  { icon: "🔒", value: "Banco-nivel", label: "Seguridad certificada" },
-  { icon: "📊", value: "Transparente", label: "Sin costos ocultos" },
-];
+const Navbar = ({ onLogin, onRegister }: { onLogin: () => void, onRegister: () => void }) => {
+  const [scrolled, setScrolled] = useState(false);
 
-const assurances = [
-  { title: "Decisiones instantáneas", caption: "IA avanzada evalúa tu solicitud en tiempo real sin esperas." },
-  { title: "Seguridad bancaria", caption: "Encriptación de nivel bancario y cumplimiento regulatorio total." },
-  { title: "Transparencia radical", caption: "Cero letra chica. Todos los costos visibles desde el inicio." },
-];
-
-const authCopy: Record<AuthMode, { title: string; hint: string; cta: string }> = {
-  signup: {
-    title: "Abre tu acceso",
-    hint: "Consolida tus créditos en Aurora Privé.",
-    cta: "Crear cuenta",
-  },
-  login: {
-    title: "Bienvenido",
-    hint: "Ingresa a tu portafolio seguro.",
-    cta: "Continuar",
-  },
-  "forgot-password": {
-    title: "Recuperar contraseña",
-    hint: "Te ayudaremos a recuperar el acceso.",
-    cta: "Enviar instrucciones",
-  },
-};
-
-const OutlineButton = ({
-  children,
-  onClick,
-  className = "",
-  type = "button",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  className?: string;
-  type?: "button" | "submit" | "reset";
-}) => (
-  <button
-    type={type}
-    onClick={onClick}
-    className={`inline-flex items-center justify-center rounded-full border border-slate-300/70 px-5 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900 ${className}`.trim()}
-  >
-    {children}
-  </button>
-);
-
-const PrimaryButton = ({
-  children,
-  onClick,
-  className = "",
-  type = "button",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  className?: string;
-  type?: "button" | "submit" | "reset";
-}) => (
-  <button
-    type={type}
-    onClick={onClick}
-    className={`inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:bg-slate-700 ${className}`.trim()}
-  >
-    {children}
-  </button>
-);
-
-const InputField = ({
-  label,
-  type,
-  name,
-  placeholder,
-  autoComplete,
-  required = false,
-  error,
-  success,
-  helperText,
-  onChange,
-}: {
-  label: string;
-  type: string;
-  name: string;
-  placeholder: string;
-  autoComplete?: string;
-  required?: boolean;
-  error?: boolean;
-  success?: boolean;
-  helperText?: string;
-  onChange?: (value: string) => void;
-}) => {
-  const borderColor = error
-    ? 'border-red-400 focus:border-red-500 focus:ring-red-500/10'
-    : success
-      ? 'border-green-400 focus:border-green-500 focus:ring-green-500/10'
-      : 'border-white/40 focus:border-slate-900 focus:ring-slate-900/10';
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <label className="grid gap-1 text-left">
-      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-400">{label}</span>
-      <div className="relative">
-        <input
-          className={`w-full rounded-xl border bg-white/70 px-4 py-3 text-sm font-medium text-slate-800 shadow-inner shadow-white/70 outline-none transition focus:bg-white focus:ring ${borderColor}`}
-          type={type}
-          name={name}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          required={required}
-          onChange={(e) => onChange?.(e.target.value)}
-        />
-        {error && (
-          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-        )}
-        {success && (
-          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-        )}
-      </div>
-      {helperText && (
-        <span className={`text-xs ${error ? 'text-red-600' : success ? 'text-green-600' : 'text-slate-500'}`}>
-          {helperText}
-        </span>
-      )}
-    </label>
-  );
-};
-
-const PasswordStrengthMeter = ({ password }: { password: string }) => {
-  if (!password) return null;
-
-  const strength = calculatePasswordStrength(password);
-  const widthPercentage = ((strength.score + 1) / 5) * 100;
-
-  return (
-    <div className="mt-2 space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-600">Seguridad:</span>
-        <span className="text-xs font-semibold" style={{ color: strength.color }}>
-          {strength.label}
-        </span>
-      </div>
-
-      <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-        <div
-          className="h-full transition-all duration-300 ease-out rounded-full"
-          style={{
-            width: `${widthPercentage}%`,
-            backgroundColor: strength.color
-          }}
-        />
-      </div>
-
-      {strength.suggestions.length > 0 && (
-        <ul className="text-xs text-slate-600 space-y-1">
-          {strength.suggestions.map((suggestion, i) => (
-            <li key={i} className="flex items-center gap-1.5">
-              <svg className="w-3 h-3 text-slate-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-              </svg>
-              {suggestion}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
-
-const AuthPanel = ({
-  mode,
-  onModeChange,
-  onSubmit,
-}: {
-  mode: AuthMode;
-  onModeChange: (mode: AuthMode) => void;
-  onSubmit: (mode: AuthMode, event: FormEvent<HTMLFormElement>) => void;
-}) => {
-  const [formValues, setFormValues] = useState({
-    fullName: '',
-    rut: '',
-    email: '',
-    telefono: '',
-    password: '',
-  });
-
-  const [validations, setValidations] = useState({
-    rut: { valid: false, checked: false },
-    email: { valid: false, checked: false },
-    password: { valid: false, checked: false },
-  });
-
-  const [loginAttempts, setLoginAttempts] = useState(0);
-
-  const handleFieldChange = (field: string, value: string) => {
-    setFormValues(prev => ({ ...prev, [field]: value }));
-
-    // Validar en tiempo real
-    if (field === 'rut' && value) {
-      const isValid = validateRUT(value);
-      setValidations(prev => ({ ...prev, rut: { valid: isValid, checked: true } }));
-    }
-
-    if (field === 'email' && value) {
-      const isValid = validateEmail(value);
-      setValidations(prev => ({ ...prev, email: { valid: isValid, checked: true } }));
-    }
-
-    if (field === 'password' && value) {
-      const strength = calculatePasswordStrength(value);
-      setValidations(prev => ({ ...prev, password: { valid: strength.score >= 2, checked: true } }));
-    }
-  };
-
-  const fields = useMemo(() => {
-    if (mode === "forgot-password") {
-      return (
-        <>
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-sm text-blue-900">
-              Ingresa tu correo electrónico y te enviaremos instrucciones para recuperar tu contraseña.
-            </p>
-          </div>
-          <InputField
-            label="Correo electrónico"
-            type="email"
-            name="email"
-            placeholder="tu@correo.com"
-            autoComplete="email"
-            required
-            onChange={(value) => handleFieldChange('email', value)}
-            success={validations.email.checked && validations.email.valid}
-            error={validations.email.checked && !validations.email.valid}
-            helperText={validations.email.checked && !validations.email.valid ? "Correo inválido" : undefined}
-          />
-        </>
-      );
-    }
-
-    if (mode === "signup") {
-      return (
-        <>
-          <InputField
-            label="Nombre completo"
-            type="text"
-            name="fullName"
-            placeholder="Sofía Ramírez González"
-            autoComplete="name"
-            required
-            onChange={(value) => handleFieldChange('fullName', value)}
-          />
-          <InputField
-            label="RUT"
-            type="text"
-            name="rut"
-            placeholder="12.345.678-9"
-            required
-            onChange={(value) => handleFieldChange('rut', value)}
-            success={validations.rut.checked && validations.rut.valid}
-            error={validations.rut.checked && !validations.rut.valid}
-            helperText={validations.rut.checked && !validations.rut.valid ? "RUT inválido" : undefined}
-          />
-          <InputField
-            label="Correo"
-            type="email"
-            name="email"
-            placeholder="sofia@correo.com"
-            autoComplete="email"
-            required
-            onChange={(value) => handleFieldChange('email', value)}
-            success={validations.email.checked && validations.email.valid}
-            error={validations.email.checked && !validations.email.valid}
-            helperText={validations.email.checked && !validations.email.valid ? "Correo inválido" : undefined}
-          />
-          <InputField
-            label="Teléfono (opcional)"
-            type="tel"
-            name="telefono"
-            placeholder="+56912345678"
-            autoComplete="tel"
-            onChange={(value) => handleFieldChange('telefono', value)}
-          />
-          <div>
-            <InputField
-              label="Contraseña"
-              type="password"
-              name="password"
-              placeholder="••••••••"
-              autoComplete="new-password"
-              required
-              onChange={(value) => handleFieldChange('password', value)}
-            />
-            <PasswordStrengthMeter password={formValues.password} />
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <InputField
-          label="Correo"
-          type="email"
-          name="email"
-          placeholder="tu@correo.com"
-          autoComplete="email"
-          required
-          onChange={(value) => handleFieldChange('email', value)}
-        />
-        <InputField
-          label="Contraseña"
-          type="password"
-          name="password"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          required
-          onChange={(value) => handleFieldChange('password', value)}
-        />
-
-        {loginAttempts >= 2 && (
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => onModeChange("forgot-password")}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium underline"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          </div>
-        )}
-      </>
-    );
-  }, [mode, formValues, validations, loginAttempts]);
-
-  const copy = mode === "forgot-password"
-    ? authCopy["forgot-password"]
-    : authCopy[mode === "signup" ? "signup" : "login"];
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    if (mode === "login") {
-      setLoginAttempts(prev => prev + 1);
-    }
-    onSubmit(mode, e);
-  };
-
-  return (
-    <section id="acceso" className="relative isolate overflow-hidden rounded-xl bg-white/75 p-5 shadow-lg ring-1 ring-white/60 backdrop-blur">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.15),_rgba(15,23,42,0.05))]" />
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">{copy.title}</h2>
-          <p className="text-xs text-slate-500">{copy.hint}</p>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">AP</div>
+          <span className="text-xl font-bold text-slate-900 tracking-tight">Aurora Privé</span>
         </div>
-        {mode !== "forgot-password" && (
-          <div className="flex gap-1 rounded-full bg-slate-900/5 p-0.5">
-            <button
-              type="button"
-              onClick={() => onModeChange("signup")}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === "signup" ? "bg-slate-900 text-white shadow" : "text-slate-500 hover:text-slate-900"
-                }`}
-            >
-              Nuevo
-            </button>
-            <button
-              type="button"
-              onClick={() => onModeChange("login")}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === "login" ? "bg-slate-900 text-white shadow" : "text-slate-500 hover:text-slate-900"
-                }`}
-            >
-              Cliente
-            </button>
-          </div>
-        )}
-      </div>
-      <form className="grid gap-3" onSubmit={handleSubmit}>
-        {fields}
-        <PrimaryButton className="mt-1 w-full" type="submit">
-          {copy.cta}
-        </PrimaryButton>
-
-        {mode === "forgot-password" && (
-          <button
-            type="button"
-            onClick={() => onModeChange("login")}
-            className="text-xs text-slate-600 hover:text-slate-900 font-medium"
-          >
-            ← Volver al inicio de sesión
+        <div className="hidden md:flex items-center gap-8">
+          <a href="#features" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition">Características</a>
+          <a href="#security" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition">Seguridad</a>
+          <button onClick={onLogin} className="text-sm font-medium text-slate-900 hover:text-indigo-600 transition">Iniciar Sesión</button>
+          <button onClick={onRegister} className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
+            Registrarse
           </button>
-        )}
-      </form>
-      <p className="mt-3 text-center text-[0.65rem] text-slate-400">Al continuar aceptas el acuerdo de servicio.</p>
-    </section>
+        </div>
+      </div>
+    </nav>
   );
 };
-const Toast = ({ state, onClose }: { state: ToastState; onClose: () => void }) => {
-  if (!state) return null;
-  const toneStyles =
-    state.tone === "success"
-      ? "bg-emerald-500 text-white shadow-emerald-600/40"
-      : state.tone === "error"
-        ? "bg-red-500 text-white shadow-red-600/40"
-        : "bg-slate-900 text-white shadow-slate-900/30";
-  return (
-    <div className={`pointer-events-auto fixed inset-x-0 top-6 z-50 mx-auto w-fit rounded-full px-5 py-3 text-sm font-medium shadow-lg ${toneStyles}`}>
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-2.5 w-2.5 rounded-full bg-white/70" />
-        <span>{state.message}</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full bg-white/20 px-3 py-1 text-xs uppercase tracking-wide text-white/80 transition hover:bg-white/30"
-        >
-          Cerrar
+
+const Hero = ({ onGetStarted }: { onGetStarted: () => void }) => (
+  <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+    <div className="absolute inset-0 -z-10">
+      <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-[500px] h-[500px] bg-violet-500/10 rounded-full blur-3xl"></div>
+    </div>
+    <div className="max-w-7xl mx-auto px-6 text-center">
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold mb-8 border border-indigo-100">
+        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+        Nueva Banca Digital v2.0
+      </div>
+      <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 tracking-tight mb-6 leading-tight">
+        Tu futuro financiero <br />
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">reimaginado.</span>
+      </h1>
+      <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Gestiona tus créditos, simula préstamos y controla tus finanzas con la plataforma más avanzada y segura del mercado. Sin filas, sin papeleo.
+      </p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <button onClick={onGetStarted} className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-full font-semibold text-lg hover:bg-indigo-700 transition shadow-xl shadow-indigo-600/20">
+          Comenzar ahora
+        </button>
+        <button className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-full font-semibold text-lg hover:bg-slate-50 transition">
+          Ver demostración
         </button>
       </div>
     </div>
+  </section>
+);
+
+const Features = () => (
+  <section id="features" className="py-24 bg-white">
+    <div className="max-w-7xl mx-auto px-6">
+      <div className="text-center mb-16">
+        <h2 className="text-3xl font-bold text-slate-900 mb-4">Todo lo que necesitas</h2>
+        <p className="text-slate-600 max-w-2xl mx-auto">Una suite completa de herramientas financieras diseñadas para darte el control total.</p>
+      </div>
+      <div className="grid md:grid-cols-3 gap-8">
+        {[
+          { icon: "⚡", title: "Rápido y Simple", desc: "Solicitudes aprobadas en minutos con nuestra IA de evaluación de riesgo." },
+          { icon: "🛡️", title: "Seguridad Total", desc: "Encriptación de grado militar y autenticación biométrica para proteger tus activos." },
+          { icon: "📱", title: "100% Digital", desc: "Olvídate de las sucursales. Gestiona todo desde tu dispositivo, donde sea." }
+        ].map((f, i) => (
+          <div key={i} className="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition duration-300">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm mb-6">{f.icon}</div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">{f.title}</h3>
+            <p className="text-slate-600 leading-relaxed">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+const InputField = ({ label, type, name, placeholder, required, error, success, helperText, onChange }: any) => (
+  <div className="space-y-1.5">
+    <label className="text-sm font-medium text-slate-700">{label}</label>
+    <div className="relative">
+      <input
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        onChange={(e) => onChange?.(e.target.value)}
+        className={`w-full px-4 py-3 rounded-xl border bg-slate-50 focus:bg-white transition outline-none focus:ring-2 ${error ? 'border-red-300 focus:ring-red-100' : success ? 'border-green-300 focus:ring-green-100' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+          }`}
+      />
+      {error && <span className="absolute right-3 top-3 text-red-500">✕</span>}
+      {success && <span className="absolute right-3 top-3 text-green-500">✓</span>}
+    </div>
+    {helperText && <p className={`text-xs ${error ? 'text-red-500' : 'text-slate-500'}`}>{helperText}</p>}
+  </div>
+);
+
+const AuthPanel = ({ mode, onModeChange, onSubmit }: any) => {
+  const [formValues, setFormValues] = useState({ fullName: '', rut: '', email: '', password: '' });
+  const [validations, setValidations] = useState({ rut: false, email: false, password: false });
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormValues(prev => ({ ...prev, [field]: value }));
+    if (field === 'rut') setValidations(prev => ({ ...prev, rut: validateRUT(value) }));
+    if (field === 'email') setValidations(prev => ({ ...prev, email: validateEmail(value) }));
+    if (field === 'password') {
+      const strength = calculatePasswordStrength(value);
+      setValidations(prev => ({ ...prev, password: strength.score >= 2 }));
+    }
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+      <div className="mb-8">
+        <h3 className="text-2xl font-bold text-slate-900 mb-2">
+          {mode === 'login' ? 'Bienvenido de nuevo' : mode === 'signup' ? 'Crea tu cuenta' : 'Recuperar acceso'}
+        </h3>
+        <p className="text-slate-500">
+          {mode === 'login' ? 'Ingresa a tu banca digital.' : mode === 'signup' ? 'Comienza tu viaje financiero hoy.' : 'Te enviaremos instrucciones.'}
+        </p>
+      </div>
+
+      <form onSubmit={(e) => onSubmit(mode, e)} className="space-y-5">
+        {mode === 'signup' && (
+          <>
+            <InputField label="Nombre Completo" type="text" name="fullName" placeholder="Juan Pérez" required onChange={(v: string) => handleFieldChange('fullName', v)} />
+            <InputField label="RUT" type="text" name="rut" placeholder="12.345.678-9" required error={formValues.rut && !validations.rut} success={validations.rut} helperText={formValues.rut && !validations.rut ? "RUT inválido" : ""} onChange={(v: string) => handleFieldChange('rut', v)} />
+          </>
+        )}
+
+        <InputField label="Correo Electrónico" type="email" name="email" placeholder="juan@ejemplo.com" required error={formValues.email && !validations.email} success={validations.email} onChange={(v: string) => handleFieldChange('email', v)} />
+
+        {mode !== 'forgot-password' && (
+          <InputField label="Contraseña" type="password" name="password" placeholder="••••••••" required onChange={(v: string) => handleFieldChange('password', v)} />
+        )}
+
+        <button type="submit" className="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20">
+          {mode === 'login' ? 'Ingresar' : mode === 'signup' ? 'Crear Cuenta' : 'Enviar Instrucciones'}
+        </button>
+      </form>
+
+      <div className="mt-6 flex items-center justify-between text-sm">
+        {mode === 'login' ? (
+          <>
+            <button onClick={() => onModeChange('forgot-password')} className="text-slate-500 hover:text-indigo-600">¿Olvidaste tu contraseña?</button>
+            <button onClick={() => onModeChange('signup')} className="font-semibold text-indigo-600 hover:text-indigo-700">Crear cuenta</button>
+          </>
+        ) : (
+          <button onClick={() => onModeChange('login')} className="w-full text-center text-slate-500 hover:text-indigo-600">Volver al inicio de sesión</button>
+        )}
+      </div>
+    </div>
   );
 };
 
-const App = () => {
-  console.log("App component is rendering");
+const Footer = () => (
+  <footer className="bg-slate-900 text-slate-400 py-12">
+    <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8">
+      <div className="col-span-2">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 rounded bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">AP</div>
+          <span className="text-lg font-bold text-white">Aurora Privé</span>
+        </div>
+        <p className="max-w-xs text-sm">La banca del futuro, hoy. Segura, rápida y diseñada para ti.</p>
+      </div>
+      <div>
+        <h4 className="text-white font-semibold mb-4">Producto</h4>
+        <ul className="space-y-2 text-sm">
+          <li><a href="#" className="hover:text-white transition">Créditos</a></li>
+          <li><a href="#" className="hover:text-white transition">Cuentas</a></li>
+          <li><a href="#" className="hover:text-white transition">Inversiones</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 className="text-white font-semibold mb-4">Legal</h4>
+        <ul className="space-y-2 text-sm">
+          <li><a href="#" className="hover:text-white transition">Términos</a></li>
+          <li><a href="#" className="hover:text-white transition">Privacidad</a></li>
+          <li><a href="#" className="hover:text-white transition">Seguridad</a></li>
+        </ul>
+      </div>
+    </div>
+    <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-800 text-xs text-center">
+      © 2025 Aurora Privé Bank. Todos los derechos reservados.
+    </div>
+  </footer>
+);
 
-  const [authMode, setAuthMode] = useState<AuthMode>("signup");
-  const [toast, setToast] = useState<ToastState>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [showConversionModal, setShowConversionModal] = useState(false);
+const App = () => {
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
   const { login, register } = useAuth();
 
-  console.log("Rendering AuthPanel with authMode:", authMode);
-  console.log("Rendering PublicSimulator");
-
-  const handleSubmit = async (mode: AuthMode, event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    console.log("Form submitted with mode:", mode);
-    const form = new FormData(event.currentTarget);
+  const handleAuthSubmit = async (mode: AuthMode, e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
     const email = form.get("email")?.toString() || "";
     const password = form.get("password")?.toString() || "";
 
     try {
-      if (mode === "forgot-password") {
-        console.log("Forgot password flow");
-        setToast({
-          tone: "success",
-          message: `Instrucciones enviadas a ${email}. Revisa tu bandeja de entrada.`
-        });
-        setTimeout(() => {
-          setAuthMode("login");
-          setToast(null);
-        }, 3000);
-        return;
-      }
-
       if (mode === "login") {
-        console.log("Login flow");
         await login(email, password);
-
-        setToast({
-          tone: "success",
-          message: "Inicio de sesión exitoso. Redirigiendo..."
-        });
-
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
-
-        return;
-      } else {
-        console.log("Signup flow");
+        window.location.href = '/dashboard';
+      } else if (mode === "signup") {
         const fullName = form.get("fullName")?.toString() || "";
-        const [nombre, ...apellidoParts] = fullName.split(" ");
-        const apellido = apellidoParts.join(" ") || nombre;
-        const rut = form.get("rut")?.toString() || "";
-        const telefono = form.get("telefono")?.toString();
-
+        const [nombre, ...rest] = fullName.split(" ");
         await register({
-          email,
-          password,
-          nombre,
-          apellido,
-          rut,
-          telefono
+          email, password, nombre, apellido: rest.join(" ") || nombre,
+          rut: form.get("rut")?.toString() || "",
+          telefono: ""
         });
-
-        setToast({
-          tone: "success",
-          message: `Cuenta creada para ${nombre}. Redirigiendo al dashboard...`
-        });
-
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
+        window.location.href = '/dashboard';
       }
-    } catch (error: any) {
-      console.error("Error during form submission:", error);
-      setToast({
-        tone: "error",
-        message: error.message || "Error al procesar la solicitud"
-      });
-
-      setTimeout(() => {
-        setToast(null);
-      }, 3600);
+    } catch (err) {
+      alert("Error: " + (err as Error).message);
     }
-
-    setShowConversionModal(false);
   };
 
-  console.log("Rendering App with authMode:", authMode);
+  const scrollToAuth = () => {
+    document.getElementById('auth-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <div className="relative min-h-screen bg-[#f5f7fb] text-slate-900">
-      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 border-b border-slate-200">
-        <a href="#" className="flex items-center gap-2 text-xl font-bold text-slate-900">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
-            <span className="text-sm font-bold text-white">AP</span>
-          </div>
-          Aurora Privé
-        </a>
-      </header>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
+      <Navbar onLogin={() => { setAuthMode('login'); scrollToAuth(); }} onRegister={() => { setAuthMode('signup'); scrollToAuth(); }} />
+      <Hero onGetStarted={() => { setAuthMode('signup'); scrollToAuth(); }} />
+      <Features />
 
-      <main className="mx-auto flex w-full max-w-7xl flex-col gap-16 px-6 pb-20 pt-6">
-        <section className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <AuthPanel mode={authMode} onModeChange={setAuthMode} onSubmit={handleSubmit} />
-          <PublicSimulator onRequestLoan={() => { }} />
-        </section>
-      </main>
+      <section id="auth-section" className="py-24 bg-slate-50 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-slate-900 mb-4">Simula tu crédito ideal</h2>
+                <p className="text-slate-600">Calcula cuotas, intereses y plazos en tiempo real. Sin compromisos.</p>
+              </div>
+              <PublicSimulator onRequestLoan={() => { setAuthMode('signup'); scrollToAuth(); }} />
+            </div>
+            <div className="lg:mt-0 mt-12">
+              <AuthPanel mode={authMode} onModeChange={setAuthMode} onSubmit={handleAuthSubmit} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };

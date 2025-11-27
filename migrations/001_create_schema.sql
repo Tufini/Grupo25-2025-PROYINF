@@ -109,6 +109,32 @@ CREATE INDEX idx_clientes_tipo ON clientes(tipo);
 CREATE INDEX idx_clientes_score ON clientes(score_credito);
 
 -- ============================================================================
+-- TABLE: simulaciones
+-- ============================================================================
+-- Historial de simulaciones de crédito realizadas por los clientes
+-- ============================================================================
+
+CREATE TABLE simulaciones (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    cliente_id UUID REFERENCES clientes(id) ON DELETE SET NULL,
+    monto DECIMAL(15, 2) NOT NULL CHECK (monto > 0),
+    tasa_interes DECIMAL(5, 2) NOT NULL CHECK (tasa_interes >= 0),
+    plazo_meses INTEGER NOT NULL CHECK (plazo_meses > 0),
+    cuota_mensual DECIMAL(15, 2) NOT NULL,
+    total_pagar DECIMAL(15, 2) NOT NULL,
+    fecha_simulacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ip_address INET,
+    user_agent TEXT,
+    convertido_a_solicitud BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índices para simulaciones
+CREATE INDEX idx_simulaciones_cliente_id ON simulaciones(cliente_id);
+CREATE INDEX idx_simulaciones_fecha ON simulaciones(fecha_simulacion);
+CREATE INDEX idx_simulaciones_convertido ON simulaciones(convertido_a_solicitud);
+
+-- ============================================================================
 -- TABLE: creditos
 -- ============================================================================
 -- Solicitudes y gestión de créditos bancarios
@@ -140,31 +166,7 @@ CREATE INDEX idx_creditos_estado ON creditos(estado);
 CREATE INDEX idx_creditos_tipo ON creditos(tipo);
 CREATE INDEX idx_creditos_fecha_solicitud ON creditos(fecha_solicitud);
 
--- ============================================================================
--- TABLE: simulaciones
--- ============================================================================
--- Historial de simulaciones de crédito realizadas por los clientes
--- ============================================================================
 
-CREATE TABLE simulaciones (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    cliente_id UUID REFERENCES clientes(id) ON DELETE SET NULL,
-    monto DECIMAL(15, 2) NOT NULL CHECK (monto > 0),
-    tasa_interes DECIMAL(5, 2) NOT NULL CHECK (tasa_interes >= 0),
-    plazo_meses INTEGER NOT NULL CHECK (plazo_meses > 0),
-    cuota_mensual DECIMAL(15, 2) NOT NULL,
-    total_pagar DECIMAL(15, 2) NOT NULL,
-    fecha_simulacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ip_address INET,
-    user_agent TEXT,
-    convertido_a_solicitud BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Índices para simulaciones
-CREATE INDEX idx_simulaciones_cliente_id ON simulaciones(cliente_id);
-CREATE INDEX idx_simulaciones_fecha ON simulaciones(fecha_simulacion);
-CREATE INDEX idx_simulaciones_convertido ON simulaciones(convertido_a_solicitud);
 
 -- ============================================================================
 -- TABLE: cuotas

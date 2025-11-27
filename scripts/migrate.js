@@ -30,6 +30,20 @@ async function runMigrations() {
         await pool.query('SELECT NOW()');
         console.log('✅ Conexión exitosa\n');
 
+        // Check if schema already exists
+        const tableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'usuarios'
+            );
+        `);
+
+        if (tableCheck.rows[0].exists) {
+            console.log('⚠️  El esquema ya existe. Saltando migración.\n');
+            return true;
+        }
+
         // Read migration file
         const migrationPath = path.join(__dirname, '..', 'migrations', '001_create_schema.sql');
         console.log(`📄 Leyendo migración: ${migrationPath}`);
@@ -68,6 +82,13 @@ async function runSeeds() {
     console.log('🌱 Iniciando seeds de datos de prueba...\n');
 
     try {
+        // Check if data already exists
+        const dataCheck = await pool.query('SELECT COUNT(*) FROM usuarios');
+        if (parseInt(dataCheck.rows[0].count) > 0) {
+            console.log('⚠️  Ya existen datos en la base de datos. Saltando seeds.\n');
+            return true;
+        }
+
         // Read seed file
         const seedPath = path.join(__dirname, '..', 'seeds', '001_seed_data.sql');
         console.log(`📄 Leyendo seeds: ${seedPath}`);
