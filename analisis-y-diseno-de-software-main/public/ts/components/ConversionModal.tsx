@@ -1,0 +1,188 @@
+import React, { useEffect } from 'react';
+import { useSimulation } from '../store/simulationStore.js';
+
+// Formatear moneda chilena
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    minimumFractionDigits: 0
+  }).format(value);
+};
+
+interface ConversionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreateAccount: () => void;
+  onLogin: () => void;
+}
+
+export const ConversionModal = ({
+  isOpen,
+  onClose,
+  onCreateAccount,
+  onLogin,
+}: ConversionModalProps) => {
+  const { lastSimulation } = useSimulation();
+
+  // Prevenir scroll del body cuando el modal está abierto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  // Cerrar con tecla ESC
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-[fadeIn_0.2s_ease-out]"
+      onClick={onClose}
+    >
+      <div 
+        className="relative w-full max-w-lg rounded-[2rem] bg-white p-8 shadow-2xl shadow-slate-900/30 ring-1 ring-slate-200/60 animate-[slideUp_0.3s_ease-out]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Botón cerrar */}
+        <button
+          onClick={onClose}
+          className="absolute right-6 top-6 rounded-full p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-900 hover:rotate-90 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          aria-label="Cerrar modal"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        {/* Header con ícono */}
+        <div className="mb-6">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-600 shadow-lg shadow-blue-500/30">
+            <svg className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-900 leading-tight">¡Estás a un paso!</h3>
+          <p className="mt-3 text-base leading-relaxed text-slate-600">
+            Crea tu cuenta para <span className="font-bold text-slate-900">ver si calificas a una tasa preferencial</span> y obtener tu crédito aprobado en minutos.
+          </p>
+        </div>
+
+        {/* Resumen de la simulación */}
+        {lastSimulation && (
+          <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-400">
+              Tu Simulación
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-slate-500">Monto:</p>
+                <p className="font-bold text-slate-900">{formatCurrency(lastSimulation.amount)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Plazo:</p>
+                <p className="font-bold text-slate-900">{lastSimulation.months} meses</p>
+              </div>
+              <div className="col-span-2 border-t border-slate-200 pt-3">
+                <p className="text-slate-500">Cuota mensual estimada:</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrency(lastSimulation.monthlyPayment)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Beneficios con checkmarks */}
+        <div className="mb-6 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+              <svg className="h-4 w-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Evaluación en 2 minutos</p>
+              <p className="text-xs text-slate-500">Respuesta automática e inmediata</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+              <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Tasas desde 1.2% mensual</p>
+              <p className="text-xs text-slate-500">Para clientes con mejor perfil crediticio</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-purple-100">
+              <svg className="h-4 w-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Panel exclusivo</p>
+              <p className="text-xs text-slate-500">Gestiona tus créditos desde cualquier lugar</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Dual CTAs */}
+        <div className="space-y-3">
+          <button
+            onClick={onCreateAccount}
+            className="w-full rounded-full bg-gradient-to-r from-blue-600 via-blue-700 to-cyan-600 px-6 py-4 text-base font-bold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-500/50"
+          >
+            ✨ Crear Cuenta Gratis
+          </button>
+          <button
+            onClick={onLogin}
+            className="w-full rounded-full border-2 border-slate-300/70 bg-white px-6 py-4 text-base font-semibold text-slate-700 transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-slate-300/50"
+          >
+            Ya tengo cuenta
+          </button>
+        </div>
+
+        {/* Footer con garantías */}
+        <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-500">
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">Sin compromiso</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">Respuesta inmediata</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium">100% seguro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
