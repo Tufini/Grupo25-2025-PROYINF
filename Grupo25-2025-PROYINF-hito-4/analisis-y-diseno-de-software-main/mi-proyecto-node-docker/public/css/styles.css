@@ -1,0 +1,91 @@
+/* ======== ESTILO GENERAL ======== */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #e9fbee; /* Verde pastel claro */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  width: 350px;
+}
+
+h1, h2 {
+  color: #2d6a4f;
+  text-align: center;
+}
+
+/* ======== INICIO ======== */
+.inicio {
+  background-color: #f4fef6;
+}
+
+.inicio-container {
+  text-align: center;
+}
+
+.inicio-container h1 {
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+  color: #2d6a4f;
+}
+
+.boton-simulacion {
+  background-color: #95d5b2;
+  color: white;
+  padding: 15px 40px;
+  text-decoration: none;
+  font-size: 1.2rem;
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.boton-simulacion:hover {
+  background-color: #74c69d;
+}
+
+/* ======== FORMULARIO SIMULADOR ======== */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #74c69d;
+  border-radius: 8px;
+  outline: none;
+}
+
+button {
+  padding: 10px;
+  font-size: 1rem;
+  background-color: #95d5b2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #74c69d;
+}
+
+.resultado {
+  margin-top: 15px;
+  background-color: #e6fff1;
+  padding: 1rem;
+  border-radius: 8px;
+  display: none;
+}
