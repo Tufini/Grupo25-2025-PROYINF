@@ -16,4 +16,4 @@ Los avances hechos durante el hito 4 se pueden ver evidenciados en la siguiente 
 Además si se desea acceder al prototipo de préstamos acceder a través de la URL: http://localhost:3000/simulador
 
 # Video del prototipo hito 5
-El video donde se puede ver el funcionamiento del prototipo se puede acceder mediante el siguiente [enlace]
+El video donde se puede ver el funcionamiento del prototipo se puede acceder mediante el siguiente [enlace](https://youtu.be/TzZ0b-ScbCI)
