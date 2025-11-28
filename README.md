@@ -1,17 +1,57 @@
-# Grupo25-2025-PROYINF 
-* Integrante 1: Maximiliano Méndez - 202273630-5
-* Integrante 2: Miguel Boutaud - 202373620-1
- * Integrante 3: Pascual Oteiza - 202230554-1
-# Video del cliente
-El video presentación del proyecto se puede ver por este [enlace](https://aula.usm.cl/mod/resource/view.php?id=6926137)
-# Wiki
-Puede acceder a la Wiki mediante el siguiente [enlace](https://github.com/Tufini/Grupo25-2025-PROYINF/wiki)
-# Levantamiento del proyecto
-Tanto los archivos necesarios como las instrucciones (readme.md) para llevarlo a cabo estan en la carpeta "analisis-y-diseno-de-software-main" se puede acceder por este [enlace](https://github.com/Tufini/Grupo25-2025-PROYINF/tree/main/analisis-y-diseno-de-software-main/mi-proyecto-node-docker). Tambien se puede acceder directamente al [README.md](https://github.com/Tufini/Grupo25-2025-PROYINF/blob/main/analisis-y-diseno-de-software-main/mi-proyecto-node-docker/README.md)
-# Video del prototipo
-El video donde se ve el funcionamiento del prototipo y de la primera historia de usuario (Simular préstamos). Se puede acceder mediante el siguiente [enlace](https://usmcl-my.sharepoint.com/personal/pascual_oteiza_usm_cl/_layouts/15/stream.aspx?id=%2Fpersonal%2Fpascual%5Foteiza%5Fusm%5Fcl%2FDocuments%2FPrototipo%2DGrupo25%2DADS%2Emkv&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0&ga=1&referrer=StreamWebApp%2EWeb&referrerScenario=AddressBarCopied%2Eview%2Ea5add0a7%2D3dd2%2D4e03%2Db074%2D73947639f2de)
-# Avances Hito 4
-Los avances hechos durante el hito 4 se pueden ver evidenciados en la siguiente imágen donde se ve el inicio de la página
-<img width="1904" height="953" alt="image" src="https://github.com/user-attachments/assets/45ff9870-9b36-4b75-a2d1-75377abf8931" />
-Además si se desea acceder al prototipo de préstamos acceder a través de la URL: http://localhost:3000/simulador
+# Aplicación Node.js con Docker y PostgreSQL
+
+Este es un ejemplo de una aplicación Node.js usando Express, Docker y PostgreSQL. Incluye configuración para desarrollo y producción.
+
+## Requisitos Previos
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
+- [Node.js](https://nodejs.org/) (opcional, solo para desarrollo local)
+- `curl` o cliente HTTP (para probar endpoints)
+
+## Instalación
+
+### 1. Clonar el repositorio
+git clone --no-checkout https://github.com/Tufini/Grupo25-2025-PROYINF.git
+cd Grupo25-2025-PROYINF
+git sparse-checkout init --cone
+git sparse-checkout set analisis-y-diseno-de-software-main
+git checkout main
+(debe tener docker-desktop abierto en todo momento y copiarlo y pegarlo todo junto)
+Ejecutar en terminal:
+
+1. Deben navegar hasta la carpeta Grupo25-2025-PROYINF\analisis-y-diseno-de-software-main\mi-proyecto-node-docker
+
+2. (les instalará las dependencias se suele demorar un poco la primera vez con esto levantan el proyecto)  
+docker compose up --build
+
+(para detener los contenedores)  
+docker compose down -v
+
+si no les ejecuta asegurense de estar en la carpeta correcta  
+si trabajan desde windows deben tener instalado WSL2 y tenerlo activado en docker desktop  
+esto se puede verificar en  
+Configuración   
+-Resources  
+  -Configure which WSL 2 distros you want to access Docker from. (esto debe estar activo)  
+  -Enable integration with additional distros:(esto debe estar activo)  
+
+# Comandos útiles 
+
+Pueden levantar el proyecto sin volver a construir las imágenes con el siguiente comando:
+  - docker compose up
+Si quieren levantar el proyecto en segundo plano pueden usar:
+  - docker compose up -d
+Para ver el estado de los servicios que están corriendo:
+  - docker compose ps
+Para ver los logs en tiempo real de todos los servicios:
+  - docker compose logs -f
+O de un servicio específico:
+  - docker compose logs -f nombre_servicio
+Para reiniciar un servicio específico:
+  - docker compose restart nombre_servicio
+Para detener todos los contenedores sin eliminar volúmenes:
+  - docker compose down
+
+
 
