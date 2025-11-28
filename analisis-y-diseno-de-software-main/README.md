@@ -11,23 +11,21 @@ Este es un ejemplo de una aplicación Node.js usando Express, Docker y PostgreSQ
 
 ## Instalación
 
-### 1. Clonar el repositorio
-git clone --no-checkout https://github.com/Tufini/Grupo25-2025-PROYINF.git
-cd Grupo25-2025-PROYINF
-git sparse-checkout init --cone
-git sparse-checkout set analisis-y-diseno-de-software-main
-git checkout main
-(debe tener docker-desktop abierto en todo momento y copiarlo y pegarlo todo junto)
-Ejecutar en terminal:
+### 1. Descargar aplicación
+En la página principal del repositorio se puede observar un botón verde que dice "<> Code" al clickearlo saldrá una opcion de "Download ZIP" una vez descargado extraer el archivo en una carpeta deseada
 
-1. Deben navegar hasta la carpeta Grupo25-2025-PROYINF\analisis-y-diseno-de-software-main\mi-proyecto-node-docker
+1. Deben navegar hasta  la carpeta llamada "analisis-y-diseno-de-software-main" y abrir la terminal dentro de ésta. Escribir el comando npm install
 
 2. (les instalará las dependencias se suele demorar un poco la primera vez con esto levantan el proyecto)  
-docker compose up --build
+docker compose-up -d
+docker compose up
+A través de la aplicación docker se podrá ingresar o sino directamente por el link http://localhost:3000
 
 (para detener los contenedores)  
 docker compose down -v
 
+
+Si estas instrucciones fallan, Repetir proceso pero desde el branch "OnlyDownload" y obviar el npm-install
 si no les ejecuta asegurense de estar en la carpeta correcta  
 si trabajan desde windows deben tener instalado WSL2 y tenerlo activado en docker desktop  
 esto se puede verificar en  
