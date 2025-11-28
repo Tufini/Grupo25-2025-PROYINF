@@ -15,3 +15,5 @@ Los avances hechos durante el hito 4 se pueden ver evidenciados en la siguiente 
 <img width="1904" height="953" alt="image" src="https://github.com/user-attachments/assets/45ff9870-9b36-4b75-a2d1-75377abf8931" />
 Además si se desea acceder al prototipo de préstamos acceder a través de la URL: http://localhost:3000/simulador
 
+# Video del prototipo hito 5
+El video donde se puede ver el funcionamiento del prototipo se puede acceder mediante el siguiente [enlace]
