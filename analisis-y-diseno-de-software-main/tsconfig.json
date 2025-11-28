@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "Node",
+    "lib": ["DOM", "DOM.Iterable", "ES2020", "ES2015"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmitOnError": true,
+    "outDir": "./public/js",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "public/ts/**/*.ts",
+    "public/ts/**/*.tsx",
+    "public/ts/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "build"]
+}
